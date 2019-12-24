@@ -1,0 +1,19 @@
+{
+  "name": "frontend-from-scratch",
+  "version": "0.1.0",
+  "description": "CLI for installing front-end frameworks and tools",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/j-alder/frontend-from-scratch.git"
+  },
+  "author": "Jonathon Alder",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/j-alder/frontend-from-scratch/issues"
+  },
+  "homepage": "https://github.com/j-alder/frontend-from-scratch#readme"
+}
