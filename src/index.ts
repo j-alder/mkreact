@@ -116,25 +116,27 @@ const scaffold = (): void => {
 
 /* --- PACKAGE CONFIG --- */
 
-function setOptions() {
+async function setOptions() {
+  const tempConfig = config;
   if (config.framework === null) {
-    config.framework = multiChoice(
+    await multiChoice(
       'Which application framework are you using?',
       ['react', 'vue'],
       'react'
-    );
+    )
+      .then((res: string | null) => tempConfig.framework = res);
   }
   if (config.bundler === null) {
-    config.bundler = multiChoice(
+    await multiChoice(
       'Which bundler would you like to install?',
       ['none', 'webpack', 'browserify', 'rollup', 'parcel'],
       'webpack'
-    );
-  }
-  if (config.git === null) {
-    config.git = yesNo('Initialize git repository?', false);
+    )
+      .then((res: string | null) => tempConfig.bundler = res);
   }
   console.log(config);
+  console.log(tempConfig);
+  process.exit(0);
 }
 
 

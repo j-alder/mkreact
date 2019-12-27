@@ -15,22 +15,28 @@ function ask(question: string): Promise<string> {
       response = input;
       rl.close();
     });
-    rl.on('close', () => {
-      resolve(response);
-    });
+    rl.on('close', () => resolve(response));
+    rl.on('error', () => reject());
   });
 }
 
-export function yesNo(question: string, def: boolean = false): boolean {
+export async function yesNo(question: string, def: boolean = false): Promise<boolean> {
   question = `${question} [${def === true ? 'Y' : 'y'}|${def === false ? 'N' : 'n'}] `;
-  return ask(question);
+  await ask(question)
+    .then((input: string) => input === 'y' || input === 'Y' || def);
 }
 
-export function multiChoice(question: string, options: Array<string>, def: string|null = null): Promise<string|null> {
-  options = options.map((o: string, i: number) => `  ${i}. ${o}`);
-  if (def) question += ` (default: ${def})`;
-  question += '\n' + options.join('\n') + '\n' + `[0-${options.length-1}]: `;
-  return ask(question)
+function fmtOptions(options: Array<string>): string {
+  let result = '\n';
+  for (let i = 0, len = options.length; i < len; i++) {
+    result += `  ${i}. ${options[i]}` + '\n';
+  }
+  return result += `[0-${options.length-1}]: `;
+}
+
+export async function multiChoice(question: string, options: Array<string>, def: string|null = null): Promise<string|null> {
+  question += (def ? ` (default: ${def})` : '') + fmtOptions(options);
+  await ask(question)
     .then((res: string) => {
       if (res !== '') {
         const index = parseInt(res);
@@ -38,6 +44,4 @@ export function multiChoice(question: string, options: Array<string>, def: strin
       }
       return def;
     })
-    .catch((err: Error) => exit(`An error occurred: ${err}`));
 }
-
