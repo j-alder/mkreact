@@ -58,8 +58,8 @@ function setFlag(flag: string): void {
     config.configure = true;
   } else if (flag === 'g') {
     config.git = true;
-  } else if (flag === 'v') {
-    config.verbose = true;
+  } else if (flag === 's') {
+    config.verbose = false;
   } else {
     exit(`Error: "${flag}" is not a valid argument.`);
   }
@@ -125,7 +125,7 @@ function bundlerScripts(bundler: string): Scripts {
 
 /** Create project directory and package.json */
 const scaffold = (): void => {
-  if (config.verbose) console.log(`creating directory: ${config.path}...`);
+  if (config.verbose) console.log(`creating directories in ${config.path}...`);
   fs.mkdirSync(config.path);
   fs.mkdirSync(`${config.path}/src/`);
   process.chdir(config.path);
@@ -137,16 +137,23 @@ const scaffold = (): void => {
     scripts: bundlerScripts(config.bundler),
     license: 'UNLICENSED',
   };
+  if (config.verbose) console.log('writing package.json...');
   fs.writeFileSync(`${config.path}/package.json`, JSON.stringify(packageJSON, null, 2));
   process.chdir(`${config.path}/src`);
+  if (config.verbose) console.log(`copying boilerplate files for ${config.framework}...`);
   fs.copyFile(
-    `${process.env.PWD}/files/react/index.js`,
+    `${process.env.PWD}/../files/react/index.js`,
     `${config.path}/src/index.js`,
     (err: Error) => err && exit(`An error occurred: ${err}`)
   );
   fs.copyFile(
-    `${process.env.PWD}/files/react/App.js`,
+    `${process.env.PWD}/../files/react/App.js`,
     `${config.path}/src/App.js`,
+    (err: Error) => err && exit(`An error occurred: ${err}`)
+  );
+  fs.copyFile(
+    `${process.env.PWD}/../files/react/.babelrc`,
+    `${config.path}/.babelrc`,
     (err: Error) => err && exit(`An error occurred: ${err}`)
   );
 };
