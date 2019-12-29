@@ -24,7 +24,7 @@ export const dependencies: Dependencies = {
   },
   parcel: {
     main: [],
-    dev: [],
+    dev: ['parcel-bundler'],
   },
 }
 
