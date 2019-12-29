@@ -27,7 +27,7 @@ const config: BaseConfig = {
   bundler: null,
   configure: null,
   git: null,
-  verbose: false,
+  verbose: true,
 };
 
 /* --- CONFIG MUTATION --- */
@@ -85,7 +85,7 @@ function parseArgs(args?: Array<string>): void {
 
 const install = (args: Array<string>): void => {
   if (config.verbose) {
-    console.log(`installing: ${args.join(', ')}...`);
+    console.log(`installing ${args.join(', ')}...`);
   }
   spawnSync('npm', ['install', ...args, '--save']);
 };
@@ -97,6 +97,29 @@ const installDev = (args: Array<string>): void => {
   spawnSync('npm', ['install', ...args, '--save-dev']);
 }
 
+interface Scripts {
+  dev?: string;
+  build?: string;
+}
+
+interface PackageJSON {
+  name: string;
+  author: string;
+  version: string;
+  main: string;
+  scripts: Scripts;
+  license: string;
+}
+
+function bundlerScripts(bundler: string): Scripts {
+  if (bundler === 'parcel') {
+    return {
+      dev: 'parcel src/index.js',
+      build: 'parcel build src/index.js',
+    }
+  }
+  return {};
+}
 
 /* --- FILE SYSTEM --- */
 
@@ -104,58 +127,73 @@ const installDev = (args: Array<string>): void => {
 const scaffold = (): void => {
   if (config.verbose) console.log(`creating directory: ${config.path}...`);
   fs.mkdirSync(config.path);
+  fs.mkdirSync(`${config.path}/src/`);
   process.chdir(config.path);
-  fs.writeFileSync(`${config.path}/package.json`, JSON.stringify({
+  const packageJSON = {
     name: config.name,
     author: '',
     version: '0.1.0',
     main: 'index.js',
+    scripts: bundlerScripts(config.bundler),
     license: 'UNLICENSED',
-  }, null, 2));
+  };
+  fs.writeFileSync(`${config.path}/package.json`, JSON.stringify(packageJSON, null, 2));
+  process.chdir(`${config.path}/src`);
+  fs.copyFile(
+    `${process.env.PWD}/files/react/index.js`,
+    `${config.path}/src/index.js`,
+    (err: Error) => err && exit(`An error occurred: ${err}`)
+  );
+  fs.copyFile(
+    `${process.env.PWD}/files/react/App.js`,
+    `${config.path}/src/App.js`,
+    (err: Error) => err && exit(`An error occurred: ${err}`)
+  );
 };
 
 /* --- PACKAGE CONFIG --- */
 
 async function setOptions() {
-  const tempConfig = config;
+  /* 
+   potential options:
+   framework: string | null
+   bundler:   string | null
+  */ 
   if (config.framework === null) {
-    await multiChoice(
+    config.framework = await multiChoice(
       'Which application framework are you using?',
       ['react', 'vue'],
       'react'
-    )
-      .then((res: string | null) => tempConfig.framework = res);
+    );
   }
   if (config.bundler === null) {
-    await multiChoice(
+    config.bundler = await multiChoice(
       'Which bundler would you like to install?',
-      ['none', 'webpack', 'browserify', 'rollup', 'parcel'],
+      [null, 'webpack', 'browserify', 'rollup', 'parcel'],
       'webpack'
-    )
-      .then((res: string | null) => tempConfig.bundler = res);
+    );
   }
-  console.log(config);
-  console.log(tempConfig);
-  process.exit(0);
 }
 
 
 /* --- MAIN --- */
 
-setOptions();
+const main = async (args: Array<string>) => {
+  setName(args[0]);
+  parseArgs(args.slice(1));
+  console.log(config);
+  await setOptions();
+  console.log(config);
+  scaffold();
+  install([
+    ...dependencies[config.framework].main,
+    ...dependencies[config.bundler].main,
+  ]);
+  installDev([
+    ...dependencies[config.framework].dev,
+    ...dependencies[config.bundler].dev,
+  ]);
+}
 
-//const args = process.argv.slice(2);
-//setName(args[0]);                             // set project name
-//parseArgs(args.slice(1));                     // read and set arguments and flags
-//scaffold();                                   // create dir + package.json
-//promptForInstallationCandidates();
-//install([                                     // install dependencies
-//  ...dependencies[config.framework].main,
-//  ...dependencies[config.bundler].main,
-//]);
-//installDev([                                  // install dev dependencies
-//  ...dependencies[config.framework].main,
-//  ...dependencies[config.bundler].main,
-//]);
-//configure();
+main(process.argv.slice(2));
 
