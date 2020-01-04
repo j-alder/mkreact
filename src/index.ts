@@ -185,8 +185,8 @@ const scaffold = (): void => {
       (err: Error) => err && exit(`An error occurred: ${err}`)
     );
     fs.copyFile(
-      `${process.env.PWD}/../files/react/App.js`,
-      `${config.path}/src/App.js`,
+      `${process.env.PWD}/../files/react/index.html`,
+      `${config.path}/src/index.html`,
       (err: Error) => err && exit(`An error occurred: ${err}`)
     );
     fs.copyFile(
