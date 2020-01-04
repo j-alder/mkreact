@@ -18,7 +18,7 @@ type BaseConfig = {
 };
 
 // initialize global starting config
-// TODO find a better way to store global config?
+// TODO find a better way to store globally?
 const config: BaseConfig = {
   currentDir: process.env.PWD,
   name: null,
@@ -32,27 +32,41 @@ const config: BaseConfig = {
 
 /* --- CONFIG MUTATION --- */
 
-function setName(str?: string): void {
-  if (typeof str === 'undefined') {
+/**
+ * Set the name and path of the project
+ * @param n
+ */
+function setName(n?: string): void {
+  if (typeof n === 'undefined') {
     exit('Error: Please provide a project name and try again.');
   }
-  if (!/^[\w]+(\w|-|_)*[\w]+$/i.test(str)) {
+  // name should contain only letters and dashes and/or underscores
+  if (!/^[\w]+(\w|-|_)*[\w]+$/i.test(n)) {
     exit('Error: Project name does not meet naming conventions. See readme for help.');
   }
-  config.name = str;
-  config.path = `${config.currentDir}/${str}`;
+  config.name = n;
+  // set the directory path of the project
+  config.path = `${config.currentDir}/${n}`;
 }
 
-function setArg(opt: string): void {
-  if (/^--framework=(react|vue|angular)$/.test(opt)) {
-    config.framework = opt.split('=')[1];
-  } else if (/^--bundler=(webpack|browserify|rollup)$/.test(opt)) {
-    config.bundler = opt.split('=')[1];
+/**
+ * Configure setting based on command-line argument
+ * @param arg
+ */
+function setOption(arg: string): void {
+  if (/^--framework=(react|vue|angular)$/.test(arg)) {
+    config.framework = arg.split('=')[1];
+  } else if (/^--bundler=(webpack|browserify|rollup|parcel)$/.test(arg)) {
+    config.bundler = arg.split('=')[1];
   } else {
-    exit(`Error: "${opt}" is not a valid argument.`);
+    exit(`Error: "${arg}" is not a valid argument.`);
   }
 }
 
+/**
+ * Configure setting based on command-line flag
+ * @param flag
+ */
 function setFlag(flag: string): void {
   if (flag === 'c') {
     config.configure = true;
@@ -65,11 +79,15 @@ function setFlag(flag: string): void {
   }
 }
 
+/**
+ * Loop through and set options based on command-line arguments
+ * @param args - arguments supplied by user
+ */
 function parseArgs(args?: Array<string>): void {
   if (typeof args !== 'undefined') {
     for (let i = 0, len = args.length; i < len; i++) {
       if (/^(--).*$/.test(args[i])) {
-        setArg(args[i]);
+        setOption(args[i]);
       } else if (/^(-).*$/.test(args[i])) {
         for (let j = 1, len = args[i].length; j < len; j++) {
           setFlag(args[i].charAt(j));
@@ -83,6 +101,10 @@ function parseArgs(args?: Array<string>): void {
 
 /* --- NPM --- */
 
+/**
+ * Runs npm install --save
+ * @param args - packages to install
+ */
 const install = (args: Array<string>): void => {
   if (config.verbose) {
     console.log(`installing ${args.join(', ')}...`);
@@ -90,6 +112,10 @@ const install = (args: Array<string>): void => {
   spawnSync('npm', ['install', ...args, '--save']);
 };
 
+/**
+ * Runs npm install --save-dev
+ * @param args - packages to install
+ */
 const installDev = (args: Array<string>): void => {
   if (config.verbose) {
     console.log(`installing ${args.join(', ')}...`);
@@ -111,6 +137,10 @@ interface PackageJSON {
   license: string;
 }
 
+/**
+ * Configure build and run scripts for chosen bundler
+ * @param bundler
+ */
 function bundlerScripts(bundler: string): Scripts {
   if (bundler === 'parcel') {
     return {
@@ -126,9 +156,13 @@ function bundlerScripts(bundler: string): Scripts {
 /** Create project directory and package.json */
 const scaffold = (): void => {
   if (config.verbose) console.log(`creating directories in ${config.path}...`);
+
+  // create root and src directories
   fs.mkdirSync(config.path);
   fs.mkdirSync(`${config.path}/src/`);
   process.chdir(config.path);
+
+  // initialize and write package.json in root
   const packageJSON = {
     name: config.name,
     author: '',
@@ -139,27 +173,33 @@ const scaffold = (): void => {
   };
   if (config.verbose) console.log('writing package.json...');
   fs.writeFileSync(`${config.path}/package.json`, JSON.stringify(packageJSON, null, 2));
+
+  // cp files for framework from files directory
+  // TODO find a better way to handle this
   process.chdir(`${config.path}/src`);
   if (config.verbose) console.log(`copying boilerplate files for ${config.framework}...`);
-  fs.copyFile(
-    `${process.env.PWD}/../files/react/index.js`,
-    `${config.path}/src/index.js`,
-    (err: Error) => err && exit(`An error occurred: ${err}`)
-  );
-  fs.copyFile(
-    `${process.env.PWD}/../files/react/App.js`,
-    `${config.path}/src/App.js`,
-    (err: Error) => err && exit(`An error occurred: ${err}`)
-  );
-  fs.copyFile(
-    `${process.env.PWD}/../files/react/.babelrc`,
-    `${config.path}/.babelrc`,
-    (err: Error) => err && exit(`An error occurred: ${err}`)
-  );
+  if (config.framework === 'react') {
+    fs.copyFile(
+      `${process.env.PWD}/../files/react/index.js`,
+      `${config.path}/src/index.js`,
+      (err: Error) => err && exit(`An error occurred: ${err}`)
+    );
+    fs.copyFile(
+      `${process.env.PWD}/../files/react/App.js`,
+      `${config.path}/src/App.js`,
+      (err: Error) => err && exit(`An error occurred: ${err}`)
+    );
+    fs.copyFile(
+      `${process.env.PWD}/../files/react/.babelrc`,
+      `${config.path}/.babelrc`,
+      (err: Error) => err && exit(`An error occurred: ${err}`)
+    );
+  }
 };
 
 /* --- PACKAGE CONFIG --- */
 
+/** Find options that were not set with command-line args and query for them */
 async function setOptions() {
   /* 
    potential options:
@@ -188,9 +228,7 @@ async function setOptions() {
 const main = async (args: Array<string>) => {
   setName(args[0]);
   parseArgs(args.slice(1));
-  console.log(config);
   await setOptions();
-  console.log(config);
   scaffold();
   install([
     ...dependencies[config.framework].main,

@@ -5,19 +5,8 @@ type Dependencies = {
   };
 };
 
+/** dependencies of frameworks and bundlers */
 export const dependencies: Dependencies = {
-  react: {
-    main: ['react', 'react-dom'],
-    dev: ['babel', 'babel-loader', 'babel-preset-react'],
-  },
-  webpack: {
-    main: [],
-    dev: [],
-  },
-  rollup: {
-    main: [],
-    dev: [],
-  },
   browserify: {
     main: [],
     dev: [],
@@ -25,6 +14,22 @@ export const dependencies: Dependencies = {
   parcel: {
     main: [],
     dev: ['parcel-bundler'],
+  },
+  react: {
+    main: ['react', 'react-dom'],
+    dev: ['@babel/core', '@babel/preset-react', 'babel-loader'],
+  },
+  rollup: {
+    main: [],
+    dev: [],
+  },
+  vue: {
+    main: [],
+    dev: [],
+  },
+  webpack: {
+    main: [],
+    dev: ['webpack', 'webpack-cli'],
   },
 }
 
