@@ -144,8 +144,8 @@ interface PackageJSON {
 function bundlerScripts(bundler: string): Scripts {
   if (bundler === 'parcel') {
     return {
-      dev: 'parcel src/index.js',
-      build: 'parcel build src/index.js',
+      dev: 'parcel src/index.html',
+      build: 'parcel build src/index.html',
     }
   }
   return {};
