@@ -20,7 +20,7 @@ export const dependencies: Dependencies = {
     dev: ['@babel/core', '@babel/preset-react', 'babel-loader'],
   },
   rollup: {
-    main: [],
+    main: ['rollup'],
     dev: [],
   },
   vue: {

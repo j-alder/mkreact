@@ -148,6 +148,11 @@ function bundlerScripts(bundler: string): Scripts {
       build: 'parcel build src/index.html',
     }
   }
+  if (bundler === 'rollup') {
+    return {
+      build: 'rollup src/index.js --file bundle.js --format iife',
+    }
+  }
   return {};
 }
 
