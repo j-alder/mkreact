@@ -126,6 +126,7 @@ const installDev = (args: Array<string>): void => {
 interface Scripts {
   dev?: string;
   build?: string;
+  test: string;
 }
 
 interface PackageJSON {
@@ -142,25 +143,38 @@ interface PackageJSON {
  * @param bundler
  */
 function bundlerScripts(bundler: string): Scripts {
+  const defaults = {
+    test: 'echo "Error: not test specified" && exit 1',
+  }
   if (bundler === 'parcel') {
     return {
       dev: 'parcel src/index.html',
       build: 'parcel build src/index.html',
+      ...defaults,
     }
   }
   if (bundler === 'rollup') {
     return {
       build: 'rollup src/index.js --file bundle.js --format iife',
+      ...defaults,
     }
   }
-  return {};
+  if (bundler === 'webpack') {
+    return {
+      build: 'webpack',
+      ...defaults,
+    }
+  }
+  return defaults;
 }
 
 /* --- FILE SYSTEM --- */
 
 /** Create project directory and package.json */
 const scaffold = (): void => {
-  if (config.verbose) console.log(`creating directories in ${config.path}...`);
+  if (config.verbose) {
+    console.log(`creating directories in ${config.path}...`);
+  }
 
   // create root and src directories
   fs.mkdirSync(config.path);
@@ -176,48 +190,36 @@ const scaffold = (): void => {
     scripts: bundlerScripts(config.bundler),
     license: 'UNLICENSED',
   };
-  if (config.verbose) console.log('writing package.json...');
+  if (config.verbose) {
+    console.log('writing package.json...');
+  }
   fs.writeFileSync(`${config.path}/package.json`, JSON.stringify(packageJSON, null, 2));
 
   // cp files for framework from files directory
-  // TODO find a better way to handle this
   process.chdir(`${config.path}/src`);
-  if (config.verbose) console.log(`copying boilerplate files for ${config.framework}...`);
-  if (config.framework === 'react') {
-    fs.copyFile(
-      `${process.env.PWD}/../files/react/index.js`,
-      `${config.path}/src/index.js`,
-      (err: Error) => err && exit(`An error occurred: ${err}`)
-    );
-    fs.copyFile(
-      `${process.env.PWD}/../files/react/index.html`,
-      `${config.path}/src/index.html`,
-      (err: Error) => err && exit(`An error occurred: ${err}`)
-    );
-    fs.copyFile(
-      `${process.env.PWD}/../files/react/.babelrc`,
-      `${config.path}/.babelrc`,
-      (err: Error) => err && exit(`An error occurred: ${err}`)
-    );
-  }
+  if (config.verbose) console.log('copying boilerplate files...');
+  fs.copyFile(
+    `${process.env.PWD}/../files/react/index.js`,
+    `${config.path}/src/index.js`,
+    (err: Error) => err && exit(`An error occurred: ${err}`)
+  );
+  fs.copyFile(
+    `${process.env.PWD}/../files/react/index.html`,
+    `${config.path}/src/index.html`,
+    (err: Error) => err && exit(`An error occurred: ${err}`)
+  );
+  fs.copyFile(
+    `${process.env.PWD}/../files/react/.babelrc`,
+    `${config.path}/.babelrc`,
+    (err: Error) => err && exit(`An error occurred: ${err}`)
+  );
 };
 
 /* --- PACKAGE CONFIG --- */
 
 /** Find options that were not set with command-line args and query for them */
 async function setOptions() {
-  /* 
-   potential options:
-   framework: string | null
-   bundler:   string | null
-  */ 
-  if (config.framework === null) {
-    config.framework = await multiChoice(
-      'Which application framework are you using?',
-      ['react', 'vue'],
-      'react'
-    );
-  }
+  // prompt for bundler
   if (config.bundler === null) {
     config.bundler = await multiChoice(
       'Which bundler would you like to install?',
