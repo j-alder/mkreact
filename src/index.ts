@@ -23,7 +23,7 @@ const config: BaseConfig = {
   currentDir: process.env.PWD,
   name: null,
   path: null,
-  framework: null,
+  framework: 'react',
   bundler: null,
   configure: null,
   git: null,
@@ -34,7 +34,7 @@ const config: BaseConfig = {
 
 /**
  * Set the name and path of the project
- * @param n
+ * @param n - user-defined name
  */
 function setName(n?: string): void {
   if (typeof n === 'undefined') {
@@ -78,6 +78,29 @@ function setFlag(flag: string): void {
     exit(`Error: "${flag}" is not a valid argument.`);
   }
 }
+
+const help = `
+---- mkreact help ----
+
+  COMMAND LINE ARGUMENTS:
+    --help: Display this menu
+    --bundler: Specify the bundler you would like to use.
+      Options are:
+      - webpack
+      - parcel
+      - rollup
+      - browserify
+
+  FLAGS
+    -c: Configure. Tell mkreact that you would like to walk through
+        the configuration process of installed packages.
+    -g: Git. Initialize a git repository.
+    -s: Succinct. Turn off verbose mode and mute status output until
+        mkreact finishes the installation process.
+    
+  EXAMPLE USING ARGUMENTS AND FLAGS
+    mkreact projectName --bundler=webpack -cgs
+`;
 
 /**
  * Loop through and set options based on command-line arguments
@@ -133,7 +156,8 @@ interface PackageJSON {
   name: string;
   author: string;
   version: string;
-  main: string;
+  main?: string;
+  private?: boolean;
   scripts: Scripts;
   license: string;
 }
@@ -144,7 +168,7 @@ interface PackageJSON {
  */
 function bundlerScripts(bundler: string): Scripts {
   const defaults = {
-    test: 'echo "Error: not test specified" && exit 1',
+    test: 'echo "Error: no tests specified" && exit 1',
   }
   if (bundler === 'parcel') {
     return {
@@ -161,7 +185,7 @@ function bundlerScripts(bundler: string): Scripts {
   }
   if (bundler === 'webpack') {
     return {
-      build: 'webpack',
+      build: 'webpack --config webpack.config.js',
       ...defaults,
     }
   }
@@ -179,37 +203,54 @@ const scaffold = (): void => {
   // create root and src directories
   fs.mkdirSync(config.path);
   fs.mkdirSync(`${config.path}/src/`);
+  if (config.bundler === 'webpack') {
+    fs.mkdirSync(`${config.path}/dist/`);
+  }
   process.chdir(config.path);
 
   // initialize and write package.json in root
-  const packageJSON = {
+  const packageJSON: PackageJSON = {
     name: config.name,
     author: '',
     version: '0.1.0',
-    main: 'index.js',
     scripts: bundlerScripts(config.bundler),
     license: 'UNLICENSED',
   };
+
+  if (config.bundler === 'webpack') {
+    packageJSON.private = true;
+  } else {
+    packageJSON.main = 'index.js';
+  }
+
   if (config.verbose) {
     console.log('writing package.json...');
   }
   fs.writeFileSync(`${config.path}/package.json`, JSON.stringify(packageJSON, null, 2));
 
+  // generate dynamic paths for files based on chosen bundler
+  let indexHtmlPath = `${config.path}/src/index.html`;
+  if (config.bundler === 'webpack') {
+    indexHtmlPath = `${config.path}/dist/index.html`;
+  }
+
   // cp files for framework from files directory
   process.chdir(`${config.path}/src`);
-  if (config.verbose) console.log('copying boilerplate files...');
+  if (config.verbose) {
+    console.log('copying boilerplate files...');
+  }
   fs.copyFile(
-    `${process.env.PWD}/../files/react/index.js`,
+    `${process.env.PWD}/../files/${config.bundler}/index.js`,
     `${config.path}/src/index.js`,
     (err: Error) => err && exit(`An error occurred: ${err}`)
   );
   fs.copyFile(
-    `${process.env.PWD}/../files/react/index.html`,
-    `${config.path}/src/index.html`,
+    `${process.env.PWD}/../files/${config.bundler}/index.html`,
+    indexHtmlPath,
     (err: Error) => err && exit(`An error occurred: ${err}`)
   );
   fs.copyFile(
-    `${process.env.PWD}/../files/react/.babelrc`,
+    `${process.env.PWD}/../files/.babelrc`,
     `${config.path}/.babelrc`,
     (err: Error) => err && exit(`An error occurred: ${err}`)
   );
@@ -219,7 +260,10 @@ const scaffold = (): void => {
 
 /** Find options that were not set with command-line args and query for them */
 async function setOptions() {
-  // prompt for bundler
+  /* 
+   potential options:
+   bundler:   string | null
+  */ 
   if (config.bundler === null) {
     config.bundler = await multiChoice(
       'Which bundler would you like to install?',
@@ -229,14 +273,23 @@ async function setOptions() {
   }
 }
 
-
 /* --- MAIN --- */
 
 const main = async (args: Array<string>) => {
-  setName(args[0]);
+  // display help menu or set project name
+  if (args[0] === '--help') {
+    console.log(help);
+    process.exit(0);
+  } else {
+    setName(args[0]);
+  }
+  // read and operate on user-supplied arguments
   parseArgs(args.slice(1));
+  // prompt for settings not determined by cli args
   await setOptions();
+  // insert boilerplate files and directories
   scaffold();
+  // install dependencies
   install([
     ...dependencies[config.framework].main,
     ...dependencies[config.bundler].main,
