@@ -1,4 +1,3 @@
-const { exit } = require('./error');
 const readline = require('readline');
 
 /**
