@@ -1,5 +1,11 @@
 # mkreact
-CLI for installing and configuring a React front-end
+CLI for installing and configuring a minimal, ready-to-dev React front-end
+
+### in development - mvp
+- [ ] webpack config
+- [ ] browserify config
+- [ ] parcel config
+- [ ] rollup config
 
 ### how to
 1. install `mkreact`: `npm i -g mkreact`
