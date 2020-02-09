@@ -7,7 +7,7 @@ const { yesNo, multiChoice } = require('./prompts');
 /* --- DEFAULT CONFIG --- */
 
 type BaseConfig = {
-  currentDir: string;
+  currentDir: string | null;
   name: string | null;
   path: string | null;
   framework: string | null;
@@ -20,7 +20,7 @@ type BaseConfig = {
 // initialize global starting config
 // TODO find a better way to store globally?
 const config: BaseConfig = {
-  currentDir: process.env.PWD,
+  currentDir: process.env.PWD || null,
   name: null,
   path: null,
   framework: 'react',
@@ -37,16 +37,17 @@ const config: BaseConfig = {
  * @param n - user-defined name
  */
 function setName(n?: string): void {
-  if (typeof n === 'undefined') {
+  if (!n) {
     exit('Error: Please provide a project name and try again.');
+  } else {
+    // name should contain only letters and dashes and/or underscores
+    if (!/^[\w]+(\w|-|_)*[\w]+$/i.test(n)) {
+      exit('Error: Project name does not meet naming conventions. See readme for help.');
+    }
+    config.name = n;
+    // set the directory path of the project
+    config.path = `${config.currentDir}/${n}`;
   }
-  // name should contain only letters and dashes and/or underscores
-  if (!/^[\w]+(\w|-|_)*[\w]+$/i.test(n)) {
-    exit('Error: Project name does not meet naming conventions. See readme for help.');
-  }
-  config.name = n;
-  // set the directory path of the project
-  config.path = `${config.currentDir}/${n}`;
 }
 
 /**
@@ -196,64 +197,65 @@ function bundlerScripts(bundler: string): Scripts {
 
 /** Create project directory and package.json */
 const scaffold = (): void => {
-  if (config.verbose) {
-    console.log(`creating directories in ${config.path}...`);
-  }
-
-  // create root and src directories
-  fs.mkdirSync(config.path);
-  fs.mkdirSync(`${config.path}/src/`);
-  if (config.bundler === 'webpack') {
-    fs.mkdirSync(`${config.path}/dist/`);
-  }
-  process.chdir(config.path);
-
-  // initialize and write package.json in root
-  const packageJSON: PackageJSON = {
-    name: config.name,
-    author: '',
-    version: '0.1.0',
-    scripts: bundlerScripts(config.bundler),
-    license: 'UNLICENSED',
-  };
-
-  if (config.bundler === 'webpack') {
-    packageJSON.private = true;
+  if (!config.path || !config.name || !config.bundler) {
+    exit(`Error: The following were not defined: ${!config.path ? '\npath' : ''} ${!config.name ? '\nname' : ''} ${!config.bundler ? '\nbundler' : ''}`);
   } else {
-    packageJSON.main = 'index.js';
-  }
+    if (config.verbose) {
+      console.log(`creating directories in ${config.path}...`);
+    }
+    // create root and src directories
+    fs.mkdirSync(config.path);
+    fs.mkdirSync(`${config.path}/src/`);
+    if (config.bundler === 'webpack') {
+      fs.mkdirSync(`${config.path}/dist/`);
+    }
+    process.chdir(config.path);
+    // initialize and write package.json in root
+    const packageJSON: PackageJSON = {
+      name: config.name,
+      author: '',
+      version: '0.1.0',
+      scripts: bundlerScripts(config.bundler),
+      license: 'UNLICENSED',
+    };
 
-  if (config.verbose) {
-    console.log('writing package.json...');
-  }
-  fs.writeFileSync(`${config.path}/package.json`, JSON.stringify(packageJSON, null, 2));
+    if (config.bundler === 'webpack') {
+      packageJSON.private = true;
+    } else {
+      packageJSON.main = 'index.js';
+    }
+    if (config.verbose) {
+      console.log('writing package.json...');
+    }
+    fs.writeFileSync(`${config.path}/package.json`, JSON.stringify(packageJSON, null, 2));
 
-  // generate dynamic paths for files based on chosen bundler
-  let indexHtmlPath = `${config.path}/src/index.html`;
-  if (config.bundler === 'webpack') {
-    indexHtmlPath = `${config.path}/dist/index.html`;
-  }
+    // generate dynamic paths for files based on chosen bundler
+    let indexHtmlPath = `${config.path}/src/index.html`;
+    if (config.bundler === 'webpack') {
+      indexHtmlPath = `${config.path}/dist/index.html`;
+    }
 
-  // cp files for framework from files directory
-  process.chdir(`${config.path}/src`);
-  if (config.verbose) {
-    console.log('copying boilerplate files...');
+    // cp files for framework from files directory
+    process.chdir(`${config.path}/src`);
+    if (config.verbose) {
+      console.log('copying boilerplate files...');
+    }
+    fs.copyFile(
+      `${process.env.PWD}/../files/${config.bundler}/index.js`,
+      `${config.path}/src/index.js`,
+      (err: Error) => err && exit(`An error occurred: ${err}`)
+    );
+    fs.copyFile(
+      `${process.env.PWD}/../files/${config.bundler}/index.html`,
+      indexHtmlPath,
+      (err: Error) => err && exit(`An error occurred: ${err}`)
+    );
+    fs.copyFile(
+      `${process.env.PWD}/../files/.babelrc`,
+      `${config.path}/.babelrc`,
+      (err: Error) => err && exit(`An error occurred: ${err}`)
+    );
   }
-  fs.copyFile(
-    `${process.env.PWD}/../files/${config.bundler}/index.js`,
-    `${config.path}/src/index.js`,
-    (err: Error) => err && exit(`An error occurred: ${err}`)
-  );
-  fs.copyFile(
-    `${process.env.PWD}/../files/${config.bundler}/index.html`,
-    indexHtmlPath,
-    (err: Error) => err && exit(`An error occurred: ${err}`)
-  );
-  fs.copyFile(
-    `${process.env.PWD}/../files/.babelrc`,
-    `${config.path}/.babelrc`,
-    (err: Error) => err && exit(`An error occurred: ${err}`)
-  );
 };
 
 /* --- PACKAGE CONFIG --- */
@@ -290,14 +292,16 @@ const main = async (args: Array<string>) => {
   // insert boilerplate files and directories
   scaffold();
   // install dependencies
-  install([
-    ...dependencies[config.framework].main,
-    ...dependencies[config.bundler].main,
-  ]);
-  installDev([
-    ...dependencies[config.framework].dev,
-    ...dependencies[config.bundler].dev,
-  ]);
+  if (config.framework && config.bundler) {
+    install([
+      ...dependencies[config.framework].main,
+      ...dependencies[config.bundler].main,
+    ]);
+    installDev([
+      ...dependencies[config.framework].dev,
+      ...dependencies[config.bundler].dev,
+    ]);
+  }
 }
 
 main(process.argv.slice(2));
