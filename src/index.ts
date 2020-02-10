@@ -7,13 +7,14 @@ const { yesNo, multiChoice } = require('./prompts');
 /* --- DEFAULT CONFIG --- */
 
 type BaseConfig = {
-  currentDir: string | null;
-  name: string | null;
-  path: string | null;
-  framework: string | null;
   bundler: string | null;
   configure: boolean | null;
+  currentDir: string | null;
+  framework: string | null;
   git: boolean | null;
+  name: string | null;
+  path: string | null;
+  port: number | null;
   verbose: boolean;
 };
 
@@ -198,7 +199,10 @@ function bundlerScripts(bundler: string): Scripts {
 /** Create project directory and package.json */
 const scaffold = (): void => {
   if (!config.path || !config.name || !config.bundler) {
-    exit(`Error: The following were not defined: ${!config.path ? '\npath' : ''} ${!config.name ? '\nname' : ''} ${!config.bundler ? '\nbundler' : ''}`);
+    exit(`Error: The following were not defined:` +
+         `${!config.path ? '\ninstallation path' : ''} ` +
+         `${!config.name ? '\nproject name' : ''}` +
+         `${!config.bundler ? '\nbundler' : ''}`);
   } else {
     if (config.verbose) {
       console.log(`creating directories in ${config.path}...`);
@@ -255,6 +259,13 @@ const scaffold = (): void => {
       `${config.path}/.babelrc`,
       (err: Error) => err && exit(`An error occurred: ${err}`)
     );
+    if (config.bundler === 'webpack') {
+      fs.copyFile(
+        `${process.env.PWD}/../files/webpack/webpack.config.js`,
+        `${config.path}/webpack.config.js`,
+        (err: Error) => err && exit(`An error occurred: ${err}`)
+      );
+    }
   }
 };
 
