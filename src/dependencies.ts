@@ -29,7 +29,7 @@ export const dependencies: Dependencies = {
   },
   webpack: {
     main: [],
-    dev: ['webpack', 'webpack-cli'],
+    dev: ['webpack', 'webpack-cli', 'webpack-dev-server'],
   },
 }
 

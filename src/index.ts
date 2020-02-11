@@ -21,13 +21,14 @@ type BaseConfig = {
 // initialize global starting config
 // TODO find a better way to store globally?
 const config: BaseConfig = {
-  currentDir: process.env.PWD || null,
-  name: null,
-  path: null,
-  framework: 'react',
   bundler: null,
   configure: null,
+  currentDir: process.env.PWD || null,
+  framework: 'react',
   git: null,
+  name: null,
+  path: null,
+  port: null,
   verbose: true,
 };
 
@@ -187,6 +188,7 @@ function bundlerScripts(bundler: string): Scripts {
   }
   if (bundler === 'webpack') {
     return {
+      dev: 'webpack-dev-server',
       build: 'webpack --config webpack.config.js',
       ...defaults,
     }
