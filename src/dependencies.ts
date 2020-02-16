@@ -9,7 +9,7 @@ type Dependencies = {
 export const dependencies: Dependencies = {
   browserify: {
     main: [],
-    dev: ['browserify', 'babelify'],
+    dev: ['browserify', 'babelify', 'beefy', 'watchify'],
   },
   parcel: {
     main: [],

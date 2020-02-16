@@ -94,15 +94,14 @@ const help = `
       - rollup
       - browserify
 
-  FLAGS
+  FLAGS:
     -c: Configure. Tell mkreact that you would like to walk through
         the configuration process of installed packages.
-    -g: Git. Initialize a git repository.
     -s: Succinct. Turn off verbose mode and mute status output until
         mkreact finishes the installation process.
     
-  EXAMPLE USING ARGUMENTS AND FLAGS
-    mkreact projectName --bundler=webpack -cgs
+  EXAMPLE USING ARGUMENTS AND FLAGS:
+    mkreact projectName --bundler=webpack -cs
 `;
 
 /**
@@ -153,6 +152,7 @@ interface Scripts {
   dev?: string;
   build?: string;
   test: string;
+  watch?: string;
 }
 
 interface PackageJSON {
@@ -172,6 +172,14 @@ interface PackageJSON {
 function bundlerScripts(bundler: string): Scripts {
   const defaults = {
     test: 'echo "Error: no tests specified" && exit 1',
+  }
+  if (bundler === 'browserify') {
+    return {
+      build: 'browserify -t [ babelify --presets [ react ] ] src/index.js -o build/app.js',
+      dev: 'beefy -o src/index.js -t [babelify --presets [@babel/preset-env @babel/preset-react]]',
+      watch: 'watchify -o build/main.js --debug --verbose',
+      ...defaults,
+    }
   }
   if (bundler === 'parcel') {
     return {
@@ -212,8 +220,8 @@ const scaffold = (): void => {
     // create root and src directories
     fs.mkdirSync(config.path);
     fs.mkdirSync(`${config.path}/src/`);
-    if (config.bundler === 'webpack') {
-      fs.mkdirSync(`${config.path}/dist/`);
+    if (config.bundler === 'webpack' || config.bundler === 'browserify') {
+      fs.mkdirSync(`${config.path}/build/`);
     }
     process.chdir(config.path);
     // initialize and write package.json in root
@@ -238,7 +246,7 @@ const scaffold = (): void => {
     // generate dynamic paths for files based on chosen bundler
     let indexHtmlPath = `${config.path}/src/index.html`;
     if (config.bundler === 'webpack') {
-      indexHtmlPath = `${config.path}/dist/index.html`;
+      indexHtmlPath = `${config.path}/build/index.html`;
     }
 
     // cp files for framework from files directory
@@ -246,24 +254,26 @@ const scaffold = (): void => {
     if (config.verbose) {
       console.log('copying boilerplate files...');
     }
+    const fileSrc = `${process.env.PWD}/../files`;
+    const bundlerFileSrc = `${fileSrc}/${config.bundler}`;
     fs.copyFile(
-      `${process.env.PWD}/../files/${config.bundler}/index.js`,
+      `${bundlerFileSrc}/index.js`,
       `${config.path}/src/index.js`,
       (err: Error) => err && exit(`An error occurred: ${err}`)
     );
     fs.copyFile(
-      `${process.env.PWD}/../files/${config.bundler}/index.html`,
+      `${bundlerFileSrc}/index.html`,
       indexHtmlPath,
       (err: Error) => err && exit(`An error occurred: ${err}`)
     );
     fs.copyFile(
-      `${process.env.PWD}/../files/.babelrc`,
+      `${fileSrc}/.babelrc`,
       `${config.path}/.babelrc`,
       (err: Error) => err && exit(`An error occurred: ${err}`)
     );
     if (config.bundler === 'webpack') {
       fs.copyFile(
-        `${process.env.PWD}/../files/webpack/webpack.config.js`,
+        `${bundlerFileSrc}/webpack.config.js`,
         `${config.path}/webpack.config.js`,
         (err: Error) => err && exit(`An error occurred: ${err}`)
       );
