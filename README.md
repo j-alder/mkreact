@@ -10,6 +10,11 @@ CLI for installing and configuring a minimal, ready-to-dev React front-end
 - [ ] parcel config
 - [ ] basic rollup installation
 - [ ] rollup config
+- [ ] typescript support
+
+### planned future features
+- [ ] testing library config
+- [ ] advanced scaffolding, component and route config
 
 ### how to
 1. install `mkreact`: `npm i -g mkreact`
