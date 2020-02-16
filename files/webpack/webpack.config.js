@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
   devServer: {
-    contentBase: path.join(__dirname, 'dist'),
+    contentBase: path.join(__dirname, 'build'),
     compress: true,
   },
   entry: './src/index.js',
@@ -23,7 +23,7 @@ module.exports = {
   },
   output: {
     filename: 'main.js',
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'build'),
   },
 };
 
