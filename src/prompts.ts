@@ -74,3 +74,13 @@ export async function multiChoice(
     });
 }
 
+export async function shortAnswer(question: string): Promise<string|null> {
+  return ask(question)
+  .then((res: string) => {
+    if (res !== '') {
+      return res;
+    }
+    return null;
+  });
+}
+
