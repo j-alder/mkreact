@@ -9,7 +9,7 @@ type Dependencies = {
 export const dependencies: Dependencies = {
   browserify: {
     main: [],
-    dev: [],
+    dev: ['browserify', 'babelify'],
   },
   parcel: {
     main: [],
@@ -17,14 +17,10 @@ export const dependencies: Dependencies = {
   },
   react: {
     main: ['react', 'react-dom'],
-    dev: ['@babel/core', '@babel/preset-react', 'babel-loader'],
+    dev: ['@babel/core', '@babel/preset-env', '@babel/preset-react', 'babel-loader'],
   },
   rollup: {
     main: ['rollup'],
-    dev: [],
-  },
-  vue: {
-    main: [],
     dev: [],
   },
   webpack: {
