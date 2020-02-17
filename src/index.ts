@@ -163,6 +163,9 @@ interface PackageJSON {
   private?: boolean;
   scripts: Scripts;
   license: string;
+  browserify?: {
+    transform: Array<Array<string|{presets:Array<'@babel/preset-env'|'@babel/preset-react'>}>>;
+  }
 }
 
 /**
@@ -175,9 +178,9 @@ function bundlerScripts(bundler: string): Scripts {
   }
   if (bundler === 'browserify') {
     return {
-      build: 'browserify -t [ babelify --presets [ react ] ] src/index.js -o build/app.js',
-      dev: 'beefy -o src/index.js -t [babelify --presets [@babel/preset-env @babel/preset-react]]',
-      watch: 'watchify -o build/main.js --debug --verbose',
+      build: 'browserify -o build/main.js',
+      dev: 'beefy -o src/index.js',
+      watch: 'watchify src/index.js',
       ...defaults,
     }
   }
@@ -190,7 +193,7 @@ function bundlerScripts(bundler: string): Scripts {
   }
   if (bundler === 'rollup') {
     return {
-      build: 'rollup src/index.js --file bundle.js --format iife',
+      build: 'rollup --config',
       ...defaults,
     }
   }
@@ -206,7 +209,18 @@ function bundlerScripts(bundler: string): Scripts {
 
 /* --- FILE SYSTEM --- */
 
-/** Create project directory and package.json */
+/**
+ * Copy a file from srcFile to destFile
+ * @param srcFile
+ * @param destFile
+ */
+const cp = (srcFile: string, destFile: string) => fs.copyFile(
+  srcFile,
+  destFile,
+  (err: Error) => err && exit(`An error occurred: ${err}`)
+);
+
+/** Create project directory structure and package.json */
 const scaffold = (): void => {
   if (!config.path || !config.name || !config.bundler) {
     exit(`Error: The following were not defined:` +
@@ -238,6 +252,11 @@ const scaffold = (): void => {
     } else {
       packageJSON.main = 'index.js';
     }
+    if (config.bundler === 'browserify') {
+      packageJSON.browserify = {
+        transform: [['babelify', { presets: ['@babel/preset-env', '@babel/preset-react'] }]],
+      }
+    }
     if (config.verbose) {
       console.log('writing package.json...');
     }
@@ -251,32 +270,21 @@ const scaffold = (): void => {
 
     // cp files for framework from files directory
     process.chdir(`${config.path}/src`);
+
     if (config.verbose) {
       console.log('copying boilerplate files...');
     }
     const fileSrc = `${process.env.PWD}/../files`;
     const bundlerFileSrc = `${fileSrc}/${config.bundler}`;
-    fs.copyFile(
-      `${bundlerFileSrc}/index.js`,
-      `${config.path}/src/index.js`,
-      (err: Error) => err && exit(`An error occurred: ${err}`)
-    );
-    fs.copyFile(
-      `${bundlerFileSrc}/index.html`,
-      indexHtmlPath,
-      (err: Error) => err && exit(`An error occurred: ${err}`)
-    );
-    fs.copyFile(
-      `${fileSrc}/.babelrc`,
-      `${config.path}/.babelrc`,
-      (err: Error) => err && exit(`An error occurred: ${err}`)
-    );
+    cp(`${bundlerFileSrc}/index.js`, `${config.path}/src/index.js`);
+    cp(`${bundlerFileSrc}/index.html`, indexHtmlPath);
+    cp(`${fileSrc}/.babelrc`, `${config.path}/.babelrc`);
     if (config.bundler === 'webpack') {
-      fs.copyFile(
-        `${bundlerFileSrc}/webpack.config.js`,
-        `${config.path}/webpack.config.js`,
-        (err: Error) => err && exit(`An error occurred: ${err}`)
-      );
+      cp(`${bundlerFileSrc}/webpack.config.js`, `${config.path}/webpack.config.js`);
+    }
+    if (config.bundler === 'rollup') {
+      cp(`${bundlerFileSrc}/rollup.config.js`, `${config.path}/rollup.config.js`);
+      cp(`${bundlerFileSrc}/.babelrc`, `${config.path}/src/.babelrc`);
     }
   }
 };
