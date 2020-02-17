@@ -21,7 +21,7 @@ export const dependencies: Dependencies = {
   },
   rollup: {
     main: ['rollup'],
-    dev: [],
+    dev: ['rollup-plugin-babel', '@rollup/plugin-node-resolve'],
   },
   webpack: {
     main: [],
