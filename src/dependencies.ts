@@ -7,10 +7,6 @@ type Dependencies = {
 
 /** dependencies of frameworks and bundlers */
 export const dependencies: Dependencies = {
-  browserify: {
-    main: [],
-    dev: ['browserify', 'babelify', 'beefy', 'watchify'],
-  },
   parcel: {
     main: [],
     dev: ['parcel-bundler'],

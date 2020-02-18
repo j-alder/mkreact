@@ -59,7 +59,7 @@ function setName(n?: string): void {
 function setOption(arg: string): void {
   if (/^--framework=(react|vue|angular)$/.test(arg)) {
     config.framework = arg.split('=')[1];
-  } else if (/^--bundler=(webpack|browserify|rollup|parcel)$/.test(arg)) {
+  } else if (/^--bundler=(webpack|rollup|parcel)$/.test(arg)) {
     config.bundler = arg.split('=')[1];
   } else {
     exit(`Error: "${arg}" is not a valid argument.`);
@@ -92,7 +92,6 @@ const help = `
       - webpack
       - parcel
       - rollup
-      - browserify
 
   FLAGS:
     -c: Configure. Tell mkreact that you would like to walk through
@@ -163,9 +162,6 @@ interface PackageJSON {
   private?: boolean;
   scripts: Scripts;
   license: string;
-  browserify?: {
-    transform: Array<Array<string|{presets:Array<'@babel/preset-env'|'@babel/preset-react'>}>>;
-  }
 }
 
 /**
@@ -175,14 +171,6 @@ interface PackageJSON {
 function bundlerScripts(bundler: string): Scripts {
   const defaults = {
     test: 'echo "Error: no tests specified" && exit 1',
-  }
-  if (bundler === 'browserify') {
-    return {
-      build: 'browserify -o build/main.js',
-      dev: 'beefy -o src/index.js',
-      watch: 'watchify src/index.js',
-      ...defaults,
-    }
   }
   if (bundler === 'parcel') {
     return {
@@ -234,7 +222,7 @@ const scaffold = (): void => {
     // create root and src directories
     fs.mkdirSync(config.path);
     fs.mkdirSync(`${config.path}/src/`);
-    if (config.bundler === 'webpack' || config.bundler === 'browserify') {
+    if (config.bundler === 'webpack') {
       fs.mkdirSync(`${config.path}/build/`);
     }
     process.chdir(config.path);
@@ -251,11 +239,6 @@ const scaffold = (): void => {
       packageJSON.private = true;
     } else {
       packageJSON.main = 'index.js';
-    }
-    if (config.bundler === 'browserify') {
-      packageJSON.browserify = {
-        transform: [['babelify', { presets: ['@babel/preset-env', '@babel/preset-react'] }]],
-      }
     }
     if (config.verbose) {
       console.log('writing package.json...');
@@ -300,7 +283,7 @@ async function setOptions() {
   if (config.bundler === null) {
     config.bundler = await multiChoice(
       'Which bundler would you like to install?',
-      [null, 'webpack', 'browserify', 'rollup', 'parcel'],
+      [null, 'webpack', 'rollup', 'parcel'],
       'webpack'
     );
   }
