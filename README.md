@@ -13,5 +13,7 @@ CLI for installing and configuring a minimal, ready-to-dev React front-end
 - [ ] browserify installation and config
 - [ ] typescript support
 - [ ] testing library config
+- [ ] basic linting setup
+- [ ] husky config
 - [ ] advanced scaffolding, component and route config
 
