@@ -15,10 +15,6 @@ export const dependencies: Dependencies = {
     main: ['react', 'react-dom'],
     dev: ['@babel/core', '@babel/preset-env', '@babel/preset-react', 'babel-loader'],
   },
-  rollup: {
-    main: ['rollup'],
-    dev: ['rollup-plugin-babel', '@rollup/plugin-node-resolve'],
-  },
   webpack: {
     main: [],
     dev: ['webpack', 'webpack-cli', 'webpack-dev-server'],

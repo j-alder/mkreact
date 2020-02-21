@@ -59,7 +59,7 @@ function setName(n?: string): void {
 function setOption(arg: string): void {
   if (/^--framework=(react|vue|angular)$/.test(arg)) {
     config.framework = arg.split('=')[1];
-  } else if (/^--bundler=(webpack|rollup|parcel)$/.test(arg)) {
+  } else if (/^--bundler=(webpack|parcel)$/.test(arg)) {
     config.bundler = arg.split('=')[1];
   } else {
     exit(`Error: "${arg}" is not a valid argument.`);
@@ -91,7 +91,6 @@ const help = `
       Options are:
       - webpack
       - parcel
-      - rollup
 
   FLAGS:
     -c: Configure. Tell mkreact that you would like to walk through
@@ -179,12 +178,6 @@ function bundlerScripts(bundler: string): Scripts {
       ...defaults,
     }
   }
-  if (bundler === 'rollup') {
-    return {
-      build: 'rollup --config',
-      ...defaults,
-    }
-  }
   if (bundler === 'webpack') {
     return {
       dev: 'webpack-dev-server',
@@ -265,10 +258,6 @@ const scaffold = (): void => {
     if (config.bundler === 'webpack') {
       cp(`${bundlerFileSrc}/webpack.config.js`, `${config.path}/webpack.config.js`);
     }
-    if (config.bundler === 'rollup') {
-      cp(`${bundlerFileSrc}/rollup.config.js`, `${config.path}/rollup.config.js`);
-      cp(`${bundlerFileSrc}/.babelrc`, `${config.path}/src/.babelrc`);
-    }
   }
 };
 
@@ -283,7 +272,7 @@ async function setOptions() {
   if (config.bundler === null) {
     config.bundler = await multiChoice(
       'Which bundler would you like to install?',
-      [null, 'webpack', 'rollup', 'parcel'],
+      [null, 'webpack', 'parcel'],
       'webpack'
     );
   }
