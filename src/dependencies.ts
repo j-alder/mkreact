@@ -1,9 +1,9 @@
-type Dependencies = {
+interface Dependencies {
   [key: string]: {
     main: Array<string>;
     dev: Array<string>;
   };
-};
+}
 
 /** dependencies of frameworks and bundlers */
 export const dependencies: Dependencies = {

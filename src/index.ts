@@ -6,7 +6,7 @@ const { yesNo, multiChoice } = require('./prompts');
 
 /* --- DEFAULT CONFIG --- */
 
-type BaseConfig = {
+interface BaseConfig {
   bundler: string | null;
   configure: boolean | null;
   currentDir: string | null;
@@ -16,10 +16,10 @@ type BaseConfig = {
   path: string | null;
   port: number | null;
   verbose: boolean;
-};
+}
 
-// initialize global starting config
-// TODO find a better way to store globally?
+// TODO find a better way to store globally -JA
+/** global default config */
 const config: BaseConfig = {
   bundler: null,
   configure: null,
@@ -42,12 +42,13 @@ function setName(n?: string): void {
   if (!n) {
     exit('Error: Please provide a project name and try again.');
   } else {
-    // name should contain only letters and dashes and/or underscores
+    // check that name includes only letters, underscores and/or dashes
     if (!/^[\w]+(\w|-|_)*[\w]+$/i.test(n)) {
       exit('Error: Project name does not meet naming conventions. See readme for help.');
     }
+    // set name
     config.name = n;
-    // set the directory path of the project
+    // set project dir
     config.path = `${config.currentDir}/${n}`;
   }
 }
@@ -82,6 +83,7 @@ function setFlag(flag: string): void {
   }
 }
 
+/** Message with general help and command breakdown */
 const help = `
 ---- mkreact help ----
 
@@ -103,7 +105,7 @@ const help = `
 `;
 
 /**
- * Loop through and set options based on command-line arguments
+ * Iterate through command-line arguments and set options based on them
  * @param args - arguments supplied by user
  */
 function parseArgs(args?: Array<string>): void {
@@ -128,18 +130,18 @@ function parseArgs(args?: Array<string>): void {
  * Runs npm install --save
  * @param args - packages to install
  */
-const install = (args: Array<string>): void => {
+function install(args: Array<string>): void {
   if (config.verbose) {
     console.log(`installing ${args.join(', ')}...`);
   }
   spawnSync('npm', ['install', ...args, '--save']);
-};
+}
 
 /**
  * Runs npm install --save-dev
  * @param args - packages to install
  */
-const installDev = (args: Array<string>): void => {
+function installDev(args: Array<string>): void {
   if (config.verbose) {
     console.log(`installing ${args.join(', ')}...`);
   }
@@ -191,18 +193,20 @@ function bundlerScripts(bundler: string): Scripts {
 /* --- FILE SYSTEM --- */
 
 /**
- * Copy a file from srcFile to destFile
- * @param srcFile
- * @param destFile
+ * Copy a file from source to destination
+ * @param srcFile   - source file path
+ * @param destFile  - destination file path
  */
-const cp = (srcFile: string, destFile: string) => fs.copyFile(
-  srcFile,
-  destFile,
-  (err: Error) => err && exit(`An error occurred: ${err}`)
-);
+function cp(srcFile: string, destFile: string) {
+  fs.copyFile(
+    srcFile,
+    destFile,
+    (err: Error) => err && exit(`An error occurred: ${err}`)
+  );
+}
 
 /** Create project directory structure and package.json */
-const scaffold = (): void => {
+function scaffold(): void {
   if (!config.path || !config.name || !config.bundler) {
     exit(`Error: The following were not defined:` +
          `${!config.path ? '\ninstallation path' : ''} ` +
@@ -259,16 +263,12 @@ const scaffold = (): void => {
       cp(`${bundlerFileSrc}/webpack.config.js`, `${config.path}/webpack.config.js`);
     }
   }
-};
+}
 
 /* --- PACKAGE CONFIG --- */
 
-/** Find options that were not set with command-line args and query for them */
+/** Find options that were not set with command-line args and query the user for them */
 async function setOptions() {
-  /* 
-   potential options:
-   bundler:   string | null
-  */ 
   if (config.bundler === null) {
     config.bundler = await multiChoice(
       'Which bundler would you like to install?',
@@ -280,7 +280,7 @@ async function setOptions() {
 
 /* --- MAIN --- */
 
-const main = async (args: Array<string>) => {
+async function main(args: Array<string>): Promise<void> {
   // display help menu or set project name
   if (args[0] === '--help') {
     console.log(help);
@@ -288,12 +288,16 @@ const main = async (args: Array<string>) => {
   } else {
     setName(args[0]);
   }
+
   // read and operate on user-supplied arguments
   parseArgs(args.slice(1));
+
   // prompt for settings not determined by cli args
   await setOptions();
+
   // insert boilerplate files and directories
   scaffold();
+
   // install dependencies
   if (config.framework && config.bundler) {
     install([
