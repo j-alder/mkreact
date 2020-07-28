@@ -1,7 +1,7 @@
 # mkreact
 CLI for installing and configuring a minimal, ready-to-dev React front-end. The goal of this project 
-is to provide an alternative to tools such as create-react-app by allowing ease of installation while 
-limiting abstraction and maximizing customization.
+is to provide an alternative to create-react-app by limiting abstraction and maximizing customizability 
+(think vue-cli or jHipster).
 
 ### development roadmap - mvp
 - [x] basic webpack installation
