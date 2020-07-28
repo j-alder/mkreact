@@ -1,7 +1,9 @@
 # mkreact
-CLI for installing and configuring a minimal, ready-to-dev React front-end
+CLI for installing and configuring a minimal, ready-to-dev React front-end. The goal of this project 
+is to provide an alternative to tools such as create-react-app by allowing ease of installation while 
+limiting abstraction and maximizing customization.
 
-### in development - mvp
+### development roadmap - mvp
 - [x] basic webpack installation
 - [ ] webpack config
 - [x] basic parcel installation
@@ -9,7 +11,7 @@ CLI for installing and configuring a minimal, ready-to-dev React front-end
 - [ ] basic rollup installation
 - [ ] rollup config
 
-### planned future features
+### future roadmap
 - [ ] browserify installation and config
 - [ ] typescript support
 - [ ] testing library config
