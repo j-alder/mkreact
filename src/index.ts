@@ -312,4 +312,3 @@ async function main(args: Array<string>): Promise<void> {
 }
 
 main(process.argv.slice(2));
-

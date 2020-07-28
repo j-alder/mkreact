@@ -26,4 +26,3 @@ module.exports = {
     path: path.resolve(__dirname, 'build'),
   },
 };
-

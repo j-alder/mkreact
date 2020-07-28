@@ -83,4 +83,3 @@ export async function shortAnswer(question: string): Promise<string|null> {
     return null;
   });
 }
-

@@ -20,4 +20,3 @@ export const dependencies: Dependencies = {
     dev: ['webpack', 'webpack-cli', 'webpack-dev-server'],
   },
 }
-

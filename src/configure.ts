@@ -1,4 +1,4 @@
-type WebpackConfig = {
+interface WebpackConfig {
   mode: 'production' | 'development' | 'none';
   entry: string;
 }
@@ -36,4 +36,3 @@ export async function configure(): Promise<void> {
   }
   return;
 }
-
