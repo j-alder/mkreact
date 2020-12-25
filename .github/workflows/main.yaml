@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, release/*, fix/*, feature/*, master ]
+  pull_request:
+    branches: [develop, release/*, fix/*, feature/*, master ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Prettier
+        run: |
+          npm i
+          npm prettier-list
