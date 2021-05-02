@@ -18,7 +18,8 @@
   },
   "homepage": "https://github.com/j-alder/mkreact#readme",
   "dependencies": {
-    "chalk": "^4.1.0",
+    "chalk": "^4.1.1",
+    "commander": "^7.2.0",
     "inquirer": "^7.3.3"
   },
   "devDependencies": {

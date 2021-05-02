@@ -1,56 +1,114 @@
-#!/usr/bin/env node
+#! /usr/bin/env node
 
-var inquirer = require("inquirer");
-var { spawnSync } = require("child_process");
-var fs = require("fs");
-var path = require("path");
-var files = require("./fileContents");
+const { spawnSync } = require('child_process');
+const fs = require('fs');
+const files = require('./fileContents');
+const { Command } = require('commander');
+const inquirer = require('inquirer');
 
-/**
- * Display an error message and exit the application with code 1
- * @param {string} message
- */
+const ConfigKeys = {
+  PROJECT_NAME: 'name',
+  BUNDLER: 'bundler'
+}
+
+const program = new Command()
+    .version('1.0.0')
+    .option('-v, --verbose', 'enable verbose output')
+    .option(`-n, --${ConfigKeys.PROJECT_NAME} <name>`, 'name for the project\'s root directory')
+    .option(`-b, --${ConfigKeys.BUNDLER} <bundler>`, 'bundler to use')
+    .parse(process.argv)
+;
+
+const workingDir = process.env.PWD;
+
 function terminateWithError(message) {
   console.error(message);
   process.exit(1);
 }
 
-/**
- * Orchestrate the installation of dependencies
- * @param {Object} config
- */
-function npmInstall(config) {
-  console.log("installing dependencies...");
-  try {
-    process.chdir(config.path);
-    spawnSync("npm", ["install", ...config.dependencies, "--save"]);
-    spawnSync("npm", ["install", ...config.devDependencies, "--save-dev"]);
-  } catch (error) {
-    terminateWithError(error);
-  }
+const webpackDependencies = [
+  'html-webpack-plugin',
+  'webpack',
+  'webpack-cli',
+  'webpack-dev-server',
+];
+
+const sassDependencies = [
+  'css-loader',
+  'sass',
+  'sass-loader',
+  'style-loader',
+];
+
+const babelDependencies = [
+  'babel-loader',
+  '@babel/core',
+  '@babel/plugin-transform-runtime',
+  '@babel/preset-env',
+  '@babel/preset-react',
+];
+
+const dependencies = [
+  'react',
+  'react-dom',
+  'react-router-dom',
+];
+
+const devDependencies = [
+  ...babelDependencies,
+  ...sassDependencies,
+  ...webpackDependencies
+];
+
+const config = {
+  workingDir,
+  dependencies,
+  devDependencies,
+  ...program.opts()
 }
 
-/**
- * Create project directories, initialize npm, webpack and git
- * @param {Object} config
- */
-function scaffold(config) {
+const questions = [];
+!config[ConfigKeys.PROJECT_NAME] && questions.push({
+  type: 'input',
+  name: ConfigKeys.PROJECT_NAME,
+  message: 'Project name:'
+});
+!config[ConfigKeys.BUNDLER] && questions.push({
+  type: 'list',
+  name: ConfigKeys.BUNDLER,
+  message: 'Bundler:',
+  choices: ['webpack', 'rollup', 'browserify']
+});
+
+const getConfig = answers => ({
+  ...config,
+  ...answers,
+  path: `${config.workingDir}/${config[ConfigKeys.PROJECT_NAME] || answers[ConfigKeys.PROJECT_NAME]}`
+});
+
+const confirmConfig = config => inquirer.prompt([{
+  type: 'confirm',
+  name: 'isOk',
+  message: `Is this config correct?`,
+}])
+    .then(c => c['isOk'] ? config : terminateWithError('try again!'));
+
+const scaffold = config => {
   if (fs.existsSync(config.path)) {
-    terminateWithError(`Error: ${config.path} already exists.`);
+    terminateWithError(`Error: ${config.path} already exists`);
   }
-  var packageJSON = {
+  const packageJSON = {
     name: config.name,
-    author: "",
-    version: "0.1.0",
+    author: '',
+    version: '0.1.0',
     scripts: {
-      dev:
-        "webpack serve --config webpack.config.js --progress --mode=development",
-      build: "webpack -p",
-      sass: "sass --watch ./src/styles",
+      dev: 'webpack serve --config webpack.config.js --progress --mode=development',
+      build: 'webpack -p',
+      sass: 'sass --watch ./src/styles',
     },
-    license: "UNLICENSED",
+    license: 'UNLICENSED',
   };
-  console.log("creating directories...");
+  console.log('creating directories...');
   fs.mkdirSync(config.path);
   fs.mkdirSync(`${config.path}/src`);
   fs.mkdirSync(`${config.path}/src/styles`);
@@ -59,71 +117,30 @@ function scaffold(config) {
   fs.writeFileSync(`${config.path}/src/index.js`, files.mainComponent);
   fs.writeFileSync(`${config.path}/.babelrc`, files.babelRc);
   fs.writeFileSync(`${config.path}/webpack.config.js`, files.webpackConfig);
-  console.log("writing package.json...");
+  console.log('writing package.json...');
   fs.writeFileSync(
-    `${config.path}/package.json`,
-    JSON.stringify(packageJSON, null, 2)
+      `${config.path}/package.json`,
+      JSON.stringify(packageJSON, null, 2)
   );
+  return config;
 }
 
-/**
- * Create questions based on config properties
- * @param {Object} config
- */
-function generateQuestions(config) {
-  var questions = [];
-  if (!config.name) {
-    questions.push({
-      type: "input",
-      name: "name",
-      message: "Project name:",
-    });
+const installDeps = config => {
+  try {
+    console.log('installing dependencies...')
+    process.chdir(config.path);
+    spawnSync('npm', ['install', ...config.dependencies, '--save']);
+    spawnSync('npm', ['install', ...config.devDependencies, '--save-dev']);
+    return config;
+  } catch (error) {
+    terminateWithError(error);
   }
-  return questions;
 }
 
-function main() {
-  var startTime = new Date().getTime();
-  var config = {
-    bunder: "webpack",
-    name: process.argv[2],
-    workingDir: process.env.PWD,
-    dependencies: ["react", "react-dom", "react-router-dom"],
-    devDependencies: [
-      "babel-loader",
-      "@babel/core",
-      "@babel/plugin-transform-runtime",
-      "@babel/preset-env",
-      "@babel/preset-react",
-      "html-webpack-plugin",
-      "css-loader",
-      "sass",
-      "sass-loader",
-      "style-loader",
-      "webpack",
-      "webpack-cli",
-      "webpack-dev-server",
-    ],
-  };
-
-  var questions = generateQuestions(config);
-
-  inquirer
+inquirer
     .prompt(questions)
-    .then((answers) => {
-      config = {
-        ...config,
-        ...answers,
-      };
-      config.path = `${config.workingDir}/${config.name}`;
-      scaffold(config);
-      npmInstall(config);
-      var endTime = new Date().getTime();
-      console.log(`done in ${(endTime - startTime) / 1000} seconds`);
-    })
-    .catch((error) => {
-      terminateWithError(error);
-    });
-}
-
-main();
+    .then(getConfig)
+    .then(confirmConfig)
+    .then(scaffold)
+    .then(installDeps)
+;
